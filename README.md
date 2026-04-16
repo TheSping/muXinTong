@@ -10,7 +10,7 @@
     - `marketPrice` (Double): 市场参考价
 - **后端返回示例**：JSON
     
-    `{
+    ```{
       "valuationAmount": 21896.0,
       "riskLevel": "低风险",
       "valuationModel": "DBAVM 估值模型",
