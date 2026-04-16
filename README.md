@@ -10,7 +10,8 @@
     - `marketPrice` (Double): 市场参考价
 - **后端返回示例**：JSON
     
-    ```{
+    ```
+    `{
       "valuationAmount": 21896.0,
       "riskLevel": "低风险",
       "valuationModel": "DBAVM 估值模型",
@@ -25,7 +26,8 @@
 - **功能**：前端点击提交确权后，后端自动落盘 MySQL 并部署智能合约上链，返回全套 UI 状态。
 - **前端请求 (Body - JSON)**：包含牛的基本信息，如 `{"earTag": "A-009", "weight": 750.0}`
 - **后端返回示例 (直接对应前端状态框)**：JSON
-    
+  
+    ```
     `{
       "blockchainHash": "HASH_1776334297308",
       "chainStatus": "已上链",
@@ -45,7 +47,8 @@
 - **接口地址**：`GET /api/cow/verify/{id}`
 - **功能**：根据牛的数据库 ID，交叉比对 MySQL 物理数据与区块链数字指纹，输出信任状态。
 - **后端返回示例**：JSON
-    
+
+    ```
     `{
       "assetId": 2043712921490006017,
       "blockchainFingerprint": "HASH_1776332524337",
