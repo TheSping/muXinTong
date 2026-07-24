@@ -2,8 +2,8 @@ package com.example.muye.controller;
 
 import com.example.muye.common.Result;
 import com.example.muye.dto.ValuationRequest;
-import com.example.muye.entity.CowAsset;
-import com.example.muye.service.CowAssetService;
+import com.example.muye.entity.SheepAsset;
+import com.example.muye.service.SheepAssetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -12,40 +12,40 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 牛只资产管理接口
+ * 羊只资产管理接口
  */
 @RestController
-@RequestMapping("/api/cow")
+@RequestMapping("/api/sheep")
 @CrossOrigin
-public class CowAssetController {
+public class SheepAssetController {
     @Autowired
-    private CowAssetService cowService;
+    private SheepAssetService sheepService;
 
     @PostMapping("/add")
-    public Result<String> add(@RequestBody CowAsset cow) {
-        cowService.addNewCow(cow);
+    public Result<String> add(@RequestBody SheepAsset sheep) {
+        sheepService.addNewSheep(sheep);
         return Result.success("添加成功");
     }
 
     @GetMapping("/{id}")
-    public Result<CowAsset> getOne(@PathVariable Long id) {
-        return Result.success(cowService.getCowById(id));
+    public Result<SheepAsset> getOne(@PathVariable Long id) {
+        return Result.success(sheepService.getSheepById(id));
     }
 
     @GetMapping("/list")
-    public Result<List<CowAsset>> list() {
-        return Result.success(cowService.getAllCows());
+    public Result<List<SheepAsset>> list() {
+        return Result.success(sheepService.getAllSheep());
     }
 
     @PutMapping("/update")
-    public Result<String> update(@RequestBody CowAsset cow) {
-        cowService.updateCow(cow);
+    public Result<String> update(@RequestBody SheepAsset sheep) {
+        sheepService.updateSheep(sheep);
         return Result.success("更新成功");
     }
 
     @DeleteMapping("/delete/{id}")
     public Result<String> delete(@PathVariable Long id) {
-        cowService.deleteCow(id);
+        sheepService.deleteSheep(id);
         return Result.success("删除成功");
     }
 
@@ -54,15 +54,15 @@ public class CowAssetController {
      */
     @PostMapping("/evaluate")
     public Result<Map<String, Object>> evaluate(@Valid @RequestBody ValuationRequest req) {
-        return Result.success(cowService.evaluateCow(req));
+        return Result.success(sheepService.evaluateSheep(req));
     }
 
     /**
      * 资产确权流水线：MySQL 入库 + 区块链上链，返回多维度状态报告
      */
     @PostMapping("/confirm")
-    public Result<Map<String, Object>> confirm(@RequestBody CowAsset cow) {
-        return Result.success(cowService.confirmCow(cow));
+    public Result<Map<String, Object>> confirm(@RequestBody SheepAsset sheep) {
+        return Result.success(sheepService.confirmSheep(sheep));
     }
 
     /**
@@ -70,6 +70,6 @@ public class CowAssetController {
      */
     @GetMapping("/verify/{id}")
     public Result<Map<String, Object>> verify(@PathVariable Long id) {
-        return Result.success(cowService.verifyCow(id));
+        return Result.success(sheepService.verifySheep(id));
     }
 }

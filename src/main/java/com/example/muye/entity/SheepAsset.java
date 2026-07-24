@@ -4,11 +4,11 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 /**
- * 牛只资产实体，对应 cow_asset 表
+ * 羊只资产实体，对应 sheep_asset 表
  */
-@TableName("cow_asset")
+@TableName("sheep_asset")
 @Data
-public class CowAsset {
+public class SheepAsset {
     private Long id;
     private String earTag;
     private Double weight;

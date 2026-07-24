@@ -3,9 +3,9 @@ package com.example.muye.service;
 import com.example.muye.contract.CowAssetChain;
 import com.example.muye.config.AppConfig;
 import com.example.muye.dto.ValuationRequest;
-import com.example.muye.entity.CowAsset;
+import com.example.muye.entity.SheepAsset;
 import com.example.muye.exception.AssetNotFoundException;
-import com.example.muye.mapper.CowAssetMapper;
+import com.example.muye.mapper.SheepAssetMapper;
 import lombok.SneakyThrows;
 import org.fisco.bcos.sdk.client.Client;
 import org.fisco.bcos.sdk.crypto.keypair.CryptoKeyPair;
@@ -22,12 +22,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 牛只资产核心服务，包含 CRUD、估值、确权上链、防伪核验
+ * 羊只资产核心服务，包含 CRUD、估值、确权上链、防伪核验
  */
 @Service
-public class CowAssetService {
+public class SheepAssetService {
     @Autowired
-    private CowAssetMapper cowMapper;
+    private SheepAssetMapper sheepMapper;
 
     @Autowired
     private Client client;
@@ -44,48 +44,48 @@ public class CowAssetService {
     }
 
     /**
-     * 新增牛只，计算初始估值后存入 MySQL 并上链存证
+     * 新增羊只，计算初始估值后存入 MySQL 并上链存证
      */
     @SneakyThrows
-    public String addNewCow(CowAsset cow) {
-        double initialValue = calculateValue(cow.getWeight());
-        cow.setValuation(initialValue);
-        cowMapper.insert(cow);
-        System.out.println("[OK] [MySQL] 牛数据已存入数据库，耳标号：" + cow.getEarTag());
+    public String addNewSheep(SheepAsset sheep) {
+        double initialValue = calculateValue(sheep.getWeight());
+        sheep.setValuation(initialValue);
+        sheepMapper.insert(sheep);
+        System.out.println("[OK] [MySQL] 羊数据已存入数据库，耳标号：" + sheep.getEarTag());
 
-        CowAssetChain cowContract = CowAssetChain.load(appConfig.getContract().getCowAssetAddress(), client, keyPair);
-        String dataHash = sha256(cow.getEarTag() + cow.getWeight() + initialValue + System.currentTimeMillis());
-        cowContract.mintCowAsset(cow.getEarTag(), dataHash);
-        System.out.println("[上链] [Blockchain] 牛上链成功，数字指纹：" + dataHash);
+        CowAssetChain contract = CowAssetChain.load(appConfig.getContract().getCowAssetAddress(), client, keyPair);
+        String dataHash = sha256(sheep.getEarTag() + sheep.getWeight() + initialValue + System.currentTimeMillis());
+        contract.mintCowAsset(sheep.getEarTag(), dataHash);
+        System.out.println("[上链] [Blockchain] 羊上链成功，数字指纹：" + dataHash);
         return dataHash;
     }
 
-    public CowAsset getCowById(Long id) {
-        return cowMapper.selectById(id);
+    public SheepAsset getSheepById(Long id) {
+        return sheepMapper.selectById(id);
     }
 
-    public List<CowAsset> getAllCows() {
-        return cowMapper.selectList(null);
+    public List<SheepAsset> getAllSheep() {
+        return sheepMapper.selectList(null);
     }
 
-    public void updateCow(CowAsset cow) {
-        if (cow.getWeight() != null) {
-            cow.setValuation(calculateValue(cow.getWeight()));
+    public void updateSheep(SheepAsset sheep) {
+        if (sheep.getWeight() != null) {
+            sheep.setValuation(calculateValue(sheep.getWeight()));
         }
-        cowMapper.updateById(cow);
+        sheepMapper.updateById(sheep);
     }
 
-    public void deleteCow(Long id) {
-        cowMapper.deleteById(id);
+    public void deleteSheep(Long id) {
+        sheepMapper.deleteById(id);
     }
 
     /**
-     * 从区块链查询牛只的数字指纹
+     * 从区块链查询羊只的数字指纹
      */
     @SneakyThrows
-    public String getCowHashFromChain(String earTag) {
-        CowAssetChain cowContract = CowAssetChain.load(appConfig.getContract().getCowAssetAddress(), client, keyPair);
-        return cowContract.getCowHash(earTag);
+    public String getSheepHashFromChain(String earTag) {
+        CowAssetChain contract = CowAssetChain.load(appConfig.getContract().getCowAssetAddress(), client, keyPair);
+        return contract.getCowHash(earTag);
     }
 
     /**
@@ -108,7 +108,7 @@ public class CowAssetService {
     /**
      * 活体估值引擎，根据体重和健康评分计算估值金额与风险等级
      */
-    public Map<String, Object> evaluateCow(ValuationRequest req) {
+    public Map<String, Object> evaluateSheep(ValuationRequest req) {
         Map<String, Object> result = new HashMap<>();
 
         double finalValuation = calculateValue(req.getWeight());
@@ -133,7 +133,7 @@ public class CowAssetService {
         }
 
         String reportText = String.format(
-                "当前活体估值结果为 ￥%s，综合体重与健康评分分析，该资产具备%s稳定性，建议%s可融资资产池。",
+                "当前羊只活体估值结果为 ￥%s，综合体重与健康评分分析，该羊只具备%s稳定性，建议%s可融资资产池。",
                 finalValuation, stability, suggestion);
 
         result.put("valuationAmount", finalValuation);
@@ -149,10 +149,10 @@ public class CowAssetService {
     /**
      * 资产确权流水线：MySQL 入库 + 区块链上链，返回多维度状态报告
      */
-    public Map<String, Object> confirmCow(CowAsset cow) {
+    public Map<String, Object> confirmSheep(SheepAsset sheep) {
         Map<String, Object> result = new HashMap<>();
 
-        String chainHash = addNewCow(cow);
+        String chainHash = addNewSheep(sheep);
 
         result.put("aiCheckResult", "一致");
         result.put("iotDataIntegrity", "96%");
@@ -162,7 +162,7 @@ public class CowAssetService {
         result.put("statusIot", "已采集 (设备在线)");
         result.put("statusAi", "通过 (识别一致)");
         result.put("statusAsset", "有效 (可确权)");
-        String riskStatus = (cow.getWeight() != null && cow.getWeight() > 100)
+        String riskStatus = (sheep.getWeight() != null && sheep.getWeight() > 30)
                 ? "低风险 (正常范围)" : "高风险 (数据异常)";
         result.put("statusRisk", riskStatus);
 
@@ -177,18 +177,18 @@ public class CowAssetService {
     /**
      * 资产防伪核验：交叉比对 MySQL 物理数据与区块链数字指纹，输出信任状态
      */
-    public Map<String, Object> verifyCow(Long id) {
-        CowAsset cow = getCowById(id);
-        if (cow == null) {
-            throw new AssetNotFoundException("数据库中查无此牛");
+    public Map<String, Object> verifySheep(Long id) {
+        SheepAsset sheep = getSheepById(id);
+        if (sheep == null) {
+            throw new AssetNotFoundException("数据库中查无此羊");
         }
 
         Map<String, Object> result = new HashMap<>();
-        String chainHash = getCowHashFromChain(cow.getEarTag());
+        String chainHash = getSheepHashFromChain(sheep.getEarTag());
 
-        result.put("assetId", cow.getId());
-        result.put("earTag", cow.getEarTag());
-        result.put("physicalData", cow);
+        result.put("assetId", sheep.getId());
+        result.put("earTag", sheep.getEarTag());
+        result.put("physicalData", sheep);
         result.put("blockchainFingerprint", chainHash);
         result.put("trustStatus", chainHash != null && !chainHash.isEmpty()
                 ? "[可信] 该资产已通过区块链存证"

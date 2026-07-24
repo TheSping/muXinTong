@@ -6,6 +6,9 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 import java.time.LocalDateTime;
 
+/**
+ * 系统用户实体，对应 sys_user 表
+ */
 @Data
 @TableName("sys_user")
 public class SysUser {

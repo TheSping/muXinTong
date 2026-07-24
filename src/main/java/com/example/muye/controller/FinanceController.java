@@ -1,43 +1,46 @@
 package com.example.muye.controller;
 
+import com.example.muye.common.Result;
 import com.example.muye.dto.FinancePredictDTO;
 import com.example.muye.dto.FinanceSubmitDTO;
+import com.example.muye.entity.FinanceApplication;
+import com.example.muye.service.FinanceApplicationService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+import javax.validation.Valid;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+/**
+ * 融资管理接口：资格预审、申请提交、查询、修改、删除
+ */
 @RestController
 @RequestMapping("/api/finance")
 public class FinanceController {
 
-    // 基准利率 LPR (这里假设为 3.45%)
+    @Autowired
+    private FinanceApplicationService financeService;
+
+    /** 基准年利率 LPR */
     private final double BASE_RATE = 3.45;
 
     /**
-     * 接口 1：资格预审引擎 (计算建议额度和利率)
+     * 资格预审引擎：根据资产估值、风险等级、贷款周期计算建议额度与利率
      */
     @PostMapping("/predict")
-    public Map<String, Object> predictFinance(@RequestBody FinancePredictDTO req) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<Map<String, Object>> predictFinance(@Valid @RequestBody FinancePredictDTO req) {
+        Map<String, Object> data = new HashMap<>();
 
-        Double valuation = req.getAssetValuation();
-        String risk = req.getRiskLevel();
-        Integer period = req.getLoanPeriod();
-
-        if (valuation == null || risk == null || period == null) {
-            result.put("error", "估值、风险等级和贷款周期不能为空");
-            return result;
-        }
-
-        // 1. 计算建议额度 (动态抵押率)
         double maxQuotaRatio;
-        double riskPremium; // 风险溢价
+        double riskPremium;
         String auditAdvice;
 
-        switch (risk) {
+        switch (req.getRiskLevel()) {
             case "低风险":
                 maxQuotaRatio = 0.85;
                 riskPremium = 0.0;
@@ -45,50 +48,71 @@ public class FinanceController {
                 break;
             case "中风险":
                 maxQuotaRatio = 0.75;
-                riskPremium = 1.0; // 中风险加 1% 利息
+                riskPremium = 1.0;
                 auditAdvice = "补充审核";
                 break;
-            default: // 高风险
+            default:
                 maxQuotaRatio = 0.60;
-                riskPremium = 2.5; // 高风险加 2.5% 利息
+                riskPremium = 2.5;
                 auditAdvice = "极高风险，建议拒贷";
         }
 
-        double suggestedQuota = valuation * maxQuotaRatio;
-
-        // 2. 计算建议利率 (基准利率 + 风险溢价 + 期限溢价)
-        double termPremium = (period > 12) ? 0.5 : 0.0; // 超过1年加 0.5% 利息
+        double suggestedQuota = req.getAssetValuation() * maxQuotaRatio;
+        double termPremium = (req.getLoanPeriod() > 12) ? 0.5 : 0.0;
         double suggestedRate = BASE_RATE + riskPremium + termPremium;
-
-        // 3. 计算预计放款时间 (当前日期 + 平台1天 + 银行3天)
         LocalDate expectedDate = LocalDate.now().plusDays(4);
 
-        // 组装返回给前端
-        result.put("suggestedQuota", Math.round(suggestedQuota * 100.0) / 100.0);
-        result.put("suggestedRate", Math.round(suggestedRate * 100.0) / 100.0);
-        result.put("expectedDate", expectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-        result.put("auditAdvice", auditAdvice);
+        data.put("suggestedQuota", Math.round(suggestedQuota * 100.0) / 100.0);
+        data.put("suggestedRate", Math.round(suggestedRate * 100.0) / 100.0);
+        data.put("expectedDate", expectedDate.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+        data.put("auditAdvice", auditAdvice);
 
-        return result;
+        return Result.success(data);
     }
 
     /**
-     * 接口 2：正式提交融资申请
+     * 提交融资申请，落库存储
      */
     @PostMapping("/submit")
-    public Map<String, Object> submitApplication(@RequestBody FinanceSubmitDTO req) {
-        Map<String, Object> result = new HashMap<>();
+    public Result<FinanceApplication> submitApplication(@Valid @RequestBody FinanceSubmitDTO req) {
+        FinanceApplication app = new FinanceApplication();
+        app.setApplicant(req.getApplicant());
+        app.setApplyAmount(req.getApplyAmount());
+        app.setLoanPeriod(req.getLoanPeriod());
+        app.setLoanUsage(req.getLoanUsage());
+        app.setAssetValuation(req.getAssetValuation());
+        app.setRiskLevel(req.getRiskLevel());
+        app.setSuggestedQuota(req.getSuggestedQuota());
+        app.setSuggestedRate(req.getSuggestedRate());
+        app.setStatus("已提交融资申请资料");
+        app.setCreateTime(LocalDateTime.now());
 
-        // TODO: 这里未来应该调用 Mapper 的 insert 方法把 req 存进 sys_finance 表
-        // financeMapper.insert(financeEntity);
+        financeService.insert(app);
 
-        // 模拟落盘成功
-        result.put("code", 200);
-        result.put("message", "融资申请提交成功！");
-        result.put("status", "已提交融资申请资料"); // 对应你 UI 上的第一个节点
+        System.out.println("[OK] 融资申请已提交：" + req.getApplicant() + "，金额：" + req.getApplyAmount());
 
-        System.out.println("✅ 收到融资申请：" + req.getApplicant() + "，金额：" + req.getApplyAmount());
+        return Result.success("融资申请提交成功", app);
+    }
 
-        return result;
+    @GetMapping("/list")
+    public Result<List<FinanceApplication>> list() {
+        return Result.success(financeService.getAll());
+    }
+
+    @GetMapping("/{id}")
+    public Result<FinanceApplication> getOne(@PathVariable Long id) {
+        return Result.success(financeService.getById(id));
+    }
+
+    @PutMapping("/update")
+    public Result<String> update(@RequestBody FinanceApplication app) {
+        financeService.update(app);
+        return Result.success("更新成功");
+    }
+
+    @DeleteMapping("/delete/{id}")
+    public Result<String> delete(@PathVariable Long id) {
+        financeService.delete(id);
+        return Result.success("删除成功");
     }
 }
