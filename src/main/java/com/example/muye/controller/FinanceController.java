@@ -21,6 +21,7 @@ import java.util.Map;
  */
 @RestController
 @RequestMapping("/api/finance")
+@CrossOrigin
 public class FinanceController {
 
     @Autowired
